@@ -33,12 +33,114 @@ select TABLE_NAME, TABLE_ROWS as TOTAL_ROW
 from INFORMATION_SCHEMA.TABLES
 where TABLE_SCHEMA = 'bellabeat_db';
 
--- get column name in dailyActivity_merged
-select COLUMN_NAME, DATA_TYPE 
-from INFORMATION_SCHEMA.COLUMNS
-where TABLE_NAME = N'dailyActivity_merged';
+-- get some values (5) in dailyActivity_merged table
+select * 
+from dailyActivity_merged
+limit 5;
 
--- get column name in dailyCalories_merged
-select COLUMN_NAME, DATA_TYPE 
-from INFORMATION_SCHEMA.COLUMNS
-where TABLE_NAME = N'dailyCalories_merged';
+-- get some values (5) in dailyCalories_merged
+select * 
+from dailyCalories_merged
+limit 5;
+
+-- get some values (5) in dailyIntensities_merged
+select *
+from dailyIntensities_merged
+limit 5;
+
+-- get some values (5) in dailySteps_merged
+select *
+from dailySteps_merged 
+limit 5;
+
+-- get some values (5) in heartrate_seconds_merged
+select *
+from heartrate_seconds_merged
+limit 5;
+
+-- get some values (5) hourlyCalories_merged
+select *
+from hourlyCalories_merged
+limit 5;
+
+-- get some values (5) in hourlyIntensities_merged
+select *
+from hourlyIntensities_merged
+limit 5;
+
+-- get some values (5) in hourlySteps_merged
+select *
+from hourlySteps_merged 
+limit 5;
+
+-- get some values (5) in  minuteCaloriesNarrow_merged
+select *
+from minuteCaloriesNarrow_merged
+limit 5;
+
+-- get some values (5) in  minuteCaloriesWide_merged
+select *
+from minuteCaloriesWide_merged 
+limit 5;
+
+-- get some values (5) in  minuteIntensitiesNarrow_merged 
+select *
+from minuteIntensitiesNarrow_merged
+limit 5;
+
+-- get some values (5) in  minuteIntensitiesWide_merged
+select *
+from minuteIntensitiesWide_merged
+limit 5;
+
+-- get some values (5) in  minuteMETsNarrow_merged
+select *
+from minuteMETsNarrow_merged 
+limit 5;
+
+-- get some values (5) in  minuteSleep_merged
+select *
+from minuteSleep_merged
+limit 5;
+
+-- get some values (5) in  minuteStepsNarrow_merged
+select *
+from minuteStepsNarrow_merged
+limit 5;
+
+-- get some values (5) in  minuteStepsWide_merged
+select *
+from minuteStepsWide_merged
+limit 5;
+
+-- get some values (5) in  sleepDay_merged
+select *
+from sleepDay_merged 
+limit 5;
+
+-- get some values (5) in weightLogInfo_merged
+select *
+from weightLogInfo_merged
+limit 5;
+
+
+-- merged tables hour_activity ( data colection)
+create table hour_activity as 
+select *
+from 
+	hourlyCalories_merged as calories
+	join 
+	hourlySteps_merged as steps
+	using (Id, ActivityHour)
+	join hourlyIntensities_merged as Intensities
+	using (Id, ActivityHour)
+;
+
+-- rename
+ALTER TABLE dailyActivity_merged  RENAME daily_activity;
+
+/* choose daily_activity, heartrate_second_merged, hour_activity,
+ minuteSleep_merged, minuteMETsNarrow_merged, sleepDay_merged */
+
+
+
