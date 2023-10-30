@@ -137,10 +137,14 @@ from
 ;
 
 -- rename
-ALTER TABLE dailyActivity_merged  RENAME daily_activity;
+alter table dailyActivity_merged  rename daily_activity;
+alter table heartrate_seconds_merged rename heartrate_seconds;
+alter table minuteSleep_merged rename minute_sleep;
+alter table minuteMETsNarrow_merged rename minute_Mets_Narrow;
+alter table sleepDay_merged rename sleep_day;
 
-/* choose daily_activity, heartrate_second_merged, hour_activity,
- minuteSleep_merged, minuteMETsNarrow_merged, sleepDay_merged */
+/* choose daily_activity, heartrate_second, hour_activity,
+ minute_sleep, minute_METs_Narrow, sleep_day */
 
 
 
