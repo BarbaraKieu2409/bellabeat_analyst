@@ -60,14 +60,6 @@ from (
 	from daily_activity
 	) as da_distinct;
 
--- create table temp as
--- select distinct *
--- from daily_activity da;
--- 
--- drop table daily_activity;
--- 
--- alter table temp rename daily_activity;
-
 -- For heartrate_seconds
 -- Remove duplicated (check)
 select '#total' as type_of_count, count(*) as value
@@ -208,6 +200,38 @@ TotalMinutesAsleep < 0
 or 
 TotalTimeInBed < 0;
 
+-- Check TotalDistance = VeryActiveDistance + ModeratelyActiveDistance 
+--                                          + LightActiveDistance 
+--                                          + SedentaryActiveDistance ?
+-- Select 
+-- 	TotalDistance - TrackerDistance as a, 
+-- 	abs(VeryActiveDistance + ModeratelyActiveDistance + LightActiveDistance + SedentaryActiveDistance - TotalDistance) as b,
+-- 	abs(VeryActiveDistance + ModeratelyActiveDistance + LightActiveDistance + SedentaryActiveDistance - TrackerDistance) as c
+-- from daily_activity
+-- where abs(VeryActiveDistance + ModeratelyActiveDistance + LightActiveDistance + SedentaryActiveDistance - TotalDistance) > 1;
+-- where TotalDistance - TrackerDistance != 0;
+
+select 
+	VeryActiveDistance + ModeratelyActiveDistance + LightActiveDistance + SedentaryActiveDistance as real_TotalDistance,
+	TotalDistance,
+	abs(VeryActiveDistance + ModeratelyActiveDistance + LightActiveDistance + SedentaryActiveDistance - TotalDistance) as TotalDistance_engagement
+from daily_activity
+where 
+	VeryActiveDistance + ModeratelyActiveDistance + LightActiveDistance + SedentaryActiveDistance != TotalDistance;
+
+-- fix TotalDistance
+update daily_activity 
+set TotalDistance = VeryActiveDistance + ModeratelyActiveDistance + LightActiveDistance + SedentaryActiveDistance
+where VeryActiveDistance + ModeratelyActiveDistance + LightActiveDistance + SedentaryActiveDistance != TotalDistance;
+
+-- check real_tracker_engagement_distance
+set @threshold_real_tracker = 1.0;
+
+select count(*) as total
+from daily_activity
+where abs(TotalDistance - TrackerDistance) > @threshold_real_tracker;
+-- We have 52 data point which real_tracker_engagement > threshold_real_tracker
+-- We do nothing because it can bring useful informations.
 
 /*
  * *************************************************************************************************** *
@@ -225,8 +249,6 @@ create table daily_activity_z_score as (
 			stddev(TotalDistance) as TotalDistance_std,
 			avg(TrackerDistance) as TrackerDistance_mean, 
 			stddev(TrackerDistance) as TrackerDistance_std,
-			avg(LoggedActivitiesDistance) as LoggedActivitiesDistance_mean,
-			stddev(LoggedActivitiesDistance) as LoggedActivitiesDistance_std,
 			avg(VeryActiveDistance) as VeryActiveDistance_mean,
 			stddev(VeryActiveDistance) as VeryActiveDistance_std,
 			avg(ModeratelyActiveDistance) as ModeratelyActiveDistance_mean,
@@ -253,7 +275,6 @@ create table daily_activity_z_score as (
 		abs(TotalSteps - da_stats.TotalSteps_mean) / da_stats.TotalSteps_std as TotalSteps_z_score,
 		abs(TotalDistance - da_stats.TotalDistance_mean) / da_stats.TotalDistance_std as TotalDistance_z_score,
 		abs(TrackerDistance - da_stats.TrackerDistance_mean) / da_stats.TrackerDistance_std as TrackerDistance_z_score,
-		abs(LoggedActivitiesDistance - da_stats.LoggedActivitiesDistance_mean) / da_stats.LoggedActivitiesDistance_std as LoggedActivitiesDistance_z_score,
 		abs(VeryActiveDistance - da_stats.VeryActiveDistance_mean) / da_stats.VeryActiveDistance_std as VeryActiveDistance_z_score,
 		abs(ModeratelyActiveDistance - da_stats.ModeratelyActiveDistance_mean) / da_stats.ModeratelyActiveDistance_std as ModeratelyActiveDistance_z_score,
 		abs(LightActiveDistance - da_stats.LightActiveDistance_mean) / da_stats.LightActiveDistance_std as LightActiveDistance_z_score,
@@ -300,16 +321,7 @@ update daily_activity as da join daily_activity_z_score as da_z on da.Id = da_z.
 set da.TrackerDistance = @max_TrackerDistance
 where da_z.TrackerDistance_z_score > 3;	
 
--- For LoggedActivitiesDistance
--- get max LoggedActivitiesDistance when LoggedActivitiesDistance_z_score <= 3
-select @max_LoggedActivitiesDistance:=max(LoggedActivitiesDistance)
-From daily_activity_z_score 
-where LoggedActivitiesDistance_z_score <=3;
-
--- replace all LoggedActivitiesDistance with @max_LoggedActivitiesDistance
-update daily_activity as da join daily_activity_z_score as da_z on da.Id = da_z.Id and da.ActivityDate = da_z.ActivityDate 
-set da.LoggedActivitiesDistance = @max_LoggedActivitiesDistance
-where da_z.LoggedActivitiesDistance_z_score > 3;	
+-- For LoggedActivitiesDistance (almost value are zero - missing)
 
 -- For VeryActiveDistance
 -- get max VeryActiveDistance when VeryActiveDistance_z_score <= 3
@@ -344,7 +356,7 @@ update daily_activity as da join daily_activity_z_score as da_z on da.Id = da_z.
 set da.LightActiveDistance = @max_LightActiveDistance
 where da_z.LightActiveDistance_z_score > 3;
 
--- For SedentaryActiveDistance (all value are zero)
+-- For SedentaryActiveDistance (almost value are zero)
 
 -- For VeryActiveMinutes column
 -- get max VeryActiveMinutes when VeryActiveMinutes_z_score <= 3
@@ -562,6 +574,8 @@ update minute_sleep as ms join minute_sleep_z_score as ms_z on ms.Id = ms_z.Id a
 set ms.value = @max_value
 where ms_z.value_z_score > 3;
  
+-- drop table minute_sleep_z_score (temp)
+drop table minute_sleep_z_score;
 -- -------------------------------------------------------------------------------------------------
 -- 	for minute_Mets_Narrow
 create table minute_Mets_Narrow_z_score(
@@ -658,7 +672,25 @@ drop table outlier;
  * *************************************************************************************************** *
  */
 -- For daily_activity
--- 
+-- detect missing (mising if value = NULL)
+
+select 'TotalSteps' as column_name, count(*) as total_missing
+from daily_activity
+where TotalSteps = NULL
+union
+select 'TotalDistance' as column_name, count(*) as total_missing
+from daily_activity
+where TotalDistance = NULL
+union 
+select 'TrackerDistance' as column_name, count(*) as total_missing 
+from daily_activity 
+where TrackerDistance = NULL
+union 
+select 'LoggedActivitiesDistance' as column_name, count(*) as total_missing
+from daily_activity 
+where LoggedActivitiesDistance = NULL;
+
+
 
 /*
  * *************************************************************************************************** *
