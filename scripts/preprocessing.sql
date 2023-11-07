@@ -1275,9 +1275,45 @@ union
 select distinct `Time`
 from weight_log
 order by `Time`;
+
+-- -------------------------------------------------------------------------------------------------
+-- -------------------------------------------------------------------------------------------------
+-- add DayOfWeek to date table and DayPeriod to time table
+
+-- for DayOfWeek
+alter table `date`
+add column `DayOfWeek` varchar(15);
+
+update `date`
+set `DayOfWeek` = dayname(`Date`);
+
+-- for DayPeriod
+-- set time start - time end
+select 
+	@morning_start:=time_to_sec('5:00:00'),
+	@morning_end:=time_to_sec('11:59:59'),
+	@afternoon_start:=time_to_sec('12:00:00'),
+	@afternoon_end:=time_to_sec('16:59:59'),
+	@evening_start:=time_to_sec('17:00:00'),
+	@evening_end:=time_to_sec('20:59:59');
+
+-- update DayPeriod
+alter table `time`
+add column DayPeriod varchar(15);
+
+update `time`
+set DayPeriod = (
+	case
+		when time_to_sec(`Time`)>= @morning_start and time_to_sec(`Time`) <= @morning_end then 'MORNING'
+		when time_to_sec(`Time`) >= @afternoon_start and time_to_sec(`Time`) <= @afternoon_end then 'AFTERNOON'
+		when time_to_sec(`Time`) >= @evening_start and time_to_sec(`Time`) <= @evening_end then 'EVENING'
+		else 'NIGHT'
+	end);
+
 -- -------------------------------------------------------------------------------------------------
 -- -------------------------------------------------------------------------------------------------
 -- create foreign key for each table
+
 -- with daily_activity
 -- for id
 alter table daily_activity 
