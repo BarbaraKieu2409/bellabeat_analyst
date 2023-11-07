@@ -137,10 +137,22 @@ from
 ;
 
 -- rename
-ALTER TABLE dailyActivity_merged  RENAME daily_activity;
+alter table dailyActivity_merged  rename daily_activity;
+alter table heartrate_seconds_merged rename heartrate_seconds;
+alter table minuteSleep_merged rename minute_sleep;
+alter table minuteMETsNarrow_merged rename minute_Mets_Narrow;
+alter table sleepDay_merged rename sleep_day;
+alter table weightLogInfo_merged rename weight_log;
+select * from weight_log;
 
-/* choose daily_activity, heartrate_second_merged, hour_activity,
- minuteSleep_merged, minuteMETsNarrow_merged, sleepDay_merged */
+/* choose daily_activity, heartrate_second, hour_activity,
+ minute_sleep, minute_METs_Narrow, sleep_day, weight_log */
 
-
-
+-- create indexes for all table which chossing. Indexes for optimize performence
+create index daily_activity_index on daily_activity (Id, ActivityDate);
+create index heartrate_seconds_index on heartrate_seconds (Id, `Time`);
+create index hour_activity_index on hour_activity (Id, ActivityHour);
+create index minute_sleep_index on minute_sleep (Id, `date`);
+create index minute_Mets_Narrow_index on minute_Mets_Narrow (Id, ActivityMinute);
+create index sleep_day_index on sleep_day (Id, SleepDay);
+create index weight_log_index on weight_log (Id, `Date`);
