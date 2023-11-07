@@ -17,29 +17,40 @@ use bellabeat_db;
  from daily_activity
  limit 5;
 
+-- -------------------------------------------------------------------------------------------------
 -- get some value (5) in heartrate_seconds
 select * 
 from heartrate_seconds 
 limit 5; 
 
+-- -------------------------------------------------------------------------------------------------
 -- get some value (5) in hour_activity 
 select * 
 from hour_activity 
-limit 5;
+limit 5
 
+-- -------------------------------------------------------------------------------------------------
 -- get some value (5) in minute_sleep 
 select *
 from minute_sleep 
 limit 5; 
 
+-- -------------------------------------------------------------------------------------------------
 --  get some value (5) in minute_Mets_Narrow
 select *
 from minute_Mets_Narrow 
 limit 5;
  
+-- -------------------------------------------------------------------------------------------------
 -- get some value (5) in sleep_day
 select *
 from sleep_day 
+limit 5;
+
+-- -------------------------------------------------------------------------------------------------
+-- get some value (5) in weight_log
+select *
+from weight_log
 limit 5;
 
 /*
@@ -60,6 +71,7 @@ from (
 	from daily_activity
 	) as da_distinct;
 
+-- -------------------------------------------------------------------------------------------------
 -- For heartrate_seconds
 -- Remove duplicated (check)
 select '#total' as type_of_count, count(*) as value
@@ -71,6 +83,7 @@ from (
 	from heartrate_seconds 
 	) as hs_distinct;
 
+-- -------------------------------------------------------------------------------------------------
 -- For hour_activity 
 -- Remove duplicated (check)
 select '#total' as type_of_count, count(*) as value 
@@ -82,6 +95,7 @@ from (
 	from hour_activity
 	) as ha_distinct;
 
+-- -------------------------------------------------------------------------------------------------
 -- for minute_sleep
 -- Remove duplicated (check)
 select '#total' as type_of_count, count(*) as value 
@@ -93,12 +107,16 @@ from (
 	from minute_sleep 
 	) as ms_distinct;
 
+-- create table temp for store distinct row in table which you want remove duplicated rows
 create table temp as
 select distinct *
 from minute_sleep ms;
+-- remove old table (having dulicated rows)
 drop table minute_sleep;
+-- change temp to old table name
 alter table temp rename minute_sleep;
 
+-- -------------------------------------------------------------------------------------------------
 --  for minute_Mets_Narrow
 -- Remove duplicated (check)
 select '#total' as type_of_count, count(*) as value 
@@ -110,6 +128,7 @@ from (
 	from minute_Mets_Narrow  
 	) as mmn_distinct;
 
+-- -------------------------------------------------------------------------------------------------
 -- for sleep day 
 -- remove duplicated (check)
 select '#total' as type_of_count, count(*) as value 
@@ -126,6 +145,20 @@ select distinct *
 from sleep_day sd;
 drop table sleep_day;
 alter table temp rename sleep_day
+
+-- -------------------------------------------------------------------------------------------------
+-- for weight_log
+select '#total' as type_of_count, count(*) as value 
+from weight_log as wl
+union 
+select '#total distinct' as type_of_count, count(*) as value 
+from (
+	select distinct *
+	from weight_log wl
+	) as wl_distinct;
+
+-- -------------------------------------------------------------------------------------------------
+-- -------------------------------------------------------------------------------------------------
 
 -- For each numberic attribute remove inconsistency value (negative)
 -- For daily_activity
@@ -158,58 +191,66 @@ where
 	or 
 	Calories < 0;
 
+-- -------------------------------------------------------------------------------------------------
 -- for heartrate_seconds 
 select count(*) as total_inconsistency_value_per_num_attr
 from heartrate_seconds hs  
 where 
-value < 0;
+	value < 0;
 
+-- -------------------------------------------------------------------------------------------------
 -- for hour_activity 
 select count(*) as total_inconsistency_value_per_num_attr 
 from hour_activity ha 
 where 
-Calories < 0 
-or 
-StepTotal < 0
-or 
-TotalIntensity < 0
-or 
-AverageIntensity < 0;
+	Calories < 0 
+	or 
+	StepTotal < 0
+	or 
+	TotalIntensity < 0
+	or 
+	AverageIntensity < 0;
 
--- for minute_sleep
-select count(*) as total_inconsistency_value_per_num_attr 
-from minute_sleep ms  
-where 
-value < 0
-or 
-logId < 0;
+-- -------------------------------------------------------------------------------------------------
+-- for minute_sleep (value is category field)
 
+-- -------------------------------------------------------------------------------------------------
 --  for minute_Mets_Narrow
 select count(*) as total_inconsistency_value_per_num_attr
 from minute_Mets_Narrow mmn 
 where 
-Mets < 0;
+	Mets < 0;
 
+-- -------------------------------------------------------------------------------------------------
 -- for sleep_day
 select count(*) as total_inconsitency_value_per_num_attr
 from sleep_day sd 
 where 
-TotalSleepRecords < 0
-or 
-TotalMinutesAsleep < 0
-or 
-TotalTimeInBed < 0;
+	TotalSleepRecords < 0
+	or 
+	TotalMinutesAsleep < 0
+	or 
+	TotalTimeInBed < 0;
+
+-- -------------------------------------------------------------------------------------------------
+-- for weight_log
+select count(*) as total_inconsitency_value_per_num_attr
+from weight_log wl 
+where 
+	WeightKg != NULL and WeightKg <= 0
+	or 
+	WeightPounds != NULL and WeightPounds <= 0
+	or
+	Fat != NULL and Fat <= 0
+	or 
+	BMI != NULL and BMI <= 0;
+
+-- -------------------------------------------------------------------------------------------------
+-- -------------------------------------------------------------------------------------------------
 
 -- Check TotalDistance = VeryActiveDistance + ModeratelyActiveDistance 
 --                                          + LightActiveDistance 
 --                                          + SedentaryActiveDistance ?
--- Select 
--- 	TotalDistance - TrackerDistance as a, 
--- 	abs(VeryActiveDistance + ModeratelyActiveDistance + LightActiveDistance + SedentaryActiveDistance - TotalDistance) as b,
--- 	abs(VeryActiveDistance + ModeratelyActiveDistance + LightActiveDistance + SedentaryActiveDistance - TrackerDistance) as c
--- from daily_activity
--- where abs(VeryActiveDistance + ModeratelyActiveDistance + LightActiveDistance + SedentaryActiveDistance - TotalDistance) > 1;
--- where TotalDistance - TrackerDistance != 0;
 
 select 
 	VeryActiveDistance + ModeratelyActiveDistance + LightActiveDistance + SedentaryActiveDistance as real_TotalDistance,
@@ -232,6 +273,21 @@ from daily_activity
 where abs(TotalDistance - TrackerDistance) > @threshold_real_tracker;
 -- We have 52 data point which real_tracker_engagement > threshold_real_tracker
 -- We do nothing because it can bring useful informations.
+
+-- -------------------------------------------------------------------------------------------------
+-- -------------------------------------------------------------------------------------------------
+
+-- Check pounds * 0.45359237 = kg in weight log
+
+set @pound_to_kg = 0.45359237
+
+select 
+	WeightKg,
+	WeightPounds,
+	abs(WeightKg - @pound_to_kg * WeightPounds)
+from weight_log;
+
+-- The result that WeightKg and WeightPounds can exchange to each other
 
 /*
  * *************************************************************************************************** *
@@ -542,40 +598,9 @@ drop table hour_activity_z_score;
 
 -- -------------------------------------------------------------------------------------------------
 -- for minute_sleep
-create table minute_sleep_z_score(
-	with 
-		Value_stats as (
-		select 
-			avg(Value) as mean,
-			stddev(Value) as std
-		from minute_sleep),
-		logId_stats as (
-		select 
-			avg(logId) as mean, 
-			stddev(logId) as std
-		from minute_sleep) 
-	select 
-		minute_sleep.*,
-		abs(value-va.mean) / va.std as value_z_score,
-		abs(logId-li.mean) / li.std as logId_z_score
-	from 
-		Value_stats va, 
-		logId_stats li,
-		minute_sleep);
-		
--- For value column
--- get max value when value_z_score <= 3
-select @max_value:=max(value)
-from minute_sleep_z_score
-where value_z_score <=3;
+-- this table only contain category field (value)
 
--- replace all value with @max_value
-update minute_sleep as ms join minute_sleep_z_score as ms_z on ms.Id = ms_z.Id and ms.date = ms_z.date
-set ms.value = @max_value
-where ms_z.value_z_score > 3;
- 
--- drop table minute_sleep_z_score (temp)
-drop table minute_sleep_z_score;
+
 -- -------------------------------------------------------------------------------------------------
 -- 	for minute_Mets_Narrow
 create table minute_Mets_Narrow_z_score(
@@ -666,6 +691,81 @@ where TotalTimeInBed_z_score >3;
 -- drop table outlier (temp)
 drop table outlier;
 
+-- -------------------------------------------------------------------------------------------------
+-- for weight_log
+create table weight_log_z_score as (
+	with 
+		WeightKg_stats as (
+			select
+				avg(WeightKg) as mean,
+				stddev(WeightKg) as std
+			from weight_log
+		),
+		WeightPounds_stats as (
+			select
+				avg(WeightPounds) as mean,
+				stddev(WeightPounds) as std
+			from weight_log
+		),
+		BMI_stats as (
+			select 
+				avg(BMI) as mean,
+				stddev(BMI) as std
+			from weight_log
+		)
+	select 
+		wl.*,
+		abs(WeightKg - WeightKg_stats.mean) / WeightKg_stats.std as WeightKg_z_score,
+		abs(WeightPounds - WeightPounds_stats.mean) / WeightPounds_stats.std as WeightPounds_z_score,
+		abs(BMI - BMI_stats.mean) / BMI_stats.std as BMI_z_score
+	from
+		weight_log as wl,
+		WeightKg_stats,
+		WeightPounds_stats,
+		BMI_stats
+	where 
+		ISNULL(WeightKg) = FALSE
+		or
+		ISNULL(WeightPounds) = FALSE 
+		or 
+		ISNULL(BMI) = FALSE);
+
+-- for WeightKg column
+-- get max WeightKg when WeightKg_z_score <= 3
+select @max_WeightKg:=max(WeightKg)
+from weight_log_z_score
+where WeightKg_z_score <= 3;
+
+-- replace all WeightKg with @max_WeightKg
+update weight_log as wl join weight_log_z_score as wl_z on wl.Id = wl_z.Id and wl.Date = wl_z.Date
+set wl.WeightKg = @max_WeightKg
+where wl_z.WeightKg_z_score  > 3;
+
+-- for WeightPounds column
+-- get max WeightPounds when WeightPounds_z_score <= 3
+select @max_WeightPounds:=max(WeightPounds)
+from weight_log_z_score
+where WeightPounds_z_score  <= 3;
+
+-- replace all WeightPounds with @max_WeightPounds
+update weight_log as wl join weight_log_z_score as wl_z on wl.Id = wl_z.Id and wl.Date = wl_z.Date
+set wl.WeightPounds  = @max_WeightPounds
+where wl_z.WeightPounds_z_score  > 3;
+
+-- for BMI column
+-- get max BMI when BMI_z_score <= 3
+select @max_BMI:=max(BMI)
+from weight_log_z_score
+where BMI_z_score <= 3;
+
+-- replace all BMI with @max_BMI
+update weight_log as wl join weight_log_z_score as wl_z on wl.Id = wl_z.Id and wl.Date = wl_z.Date
+set wl.BMI = @max_BMI
+where wl_z.BMI_z_score > 3;
+
+-- drop weight_log_z_score temp
+drop table weight_log_z_score;
+
 /*
  * *************************************************************************************************** *
  * ************************************ Check and deal with missing -********************************* *
@@ -676,21 +776,141 @@ drop table outlier;
 
 select 'TotalSteps' as column_name, count(*) as total_missing
 from daily_activity
-where TotalSteps = NULL
+where isnull(TotalSteps) = TRUE 
 union
 select 'TotalDistance' as column_name, count(*) as total_missing
 from daily_activity
-where TotalDistance = NULL
+where isnull(TotalDistance) = TRUE
 union 
 select 'TrackerDistance' as column_name, count(*) as total_missing 
 from daily_activity 
-where TrackerDistance = NULL
+where isnull(TrackerDistance) = TRUE
 union 
 select 'LoggedActivitiesDistance' as column_name, count(*) as total_missing
 from daily_activity 
-where LoggedActivitiesDistance = NULL;
+where isnull(LoggedActivitiesDistance) = TRUE
+union 
+select 'VeryActiveDistance' as column_name, count(*) as total_missing 
+from daily_activity 
+where isnull(VeryActiveDistance) = TRUE
+union 
+select 'ModeratelyActiveDistance' as column_name, count(*) as total_missing 
+from daily_activity 
+where isnull(ModeratelyActiveDistance) = TRUE
+union 
+select 'LightActiveDistance' as column_name, count(*) as total_missing 
+from daily_activity 
+where isnull(LightActiveDistance) = TRUE 
+union 
+select 'SedentaryActiveDistance' as column_name, count(*) as total_missing 
+from daily_activity 
+where isnull(SedentaryActiveDistance) = TRUE
+union 
+select 'VeryActiveMinutes' as column_name, count(*) as total_missing 
+from daily_activity 
+where isnull(VeryActiveMinutes) = TRUE
+union 
+select 'FairlyActiveMinutes' as column_name, count(*) as total_missing 
+from daily_activity 
+where isnull(FairlyActiveMinutes) = TRUE
+union 
+select 'LightlyActiveMinutes' as column_name, count(*) as total_missing 
+from daily_activity 
+where isnull(LightlyActiveMinutes) = TRUE
+union 
+select 'SedentaryMinutes' as column_name, count(*) as total_missing 
+from daily_activity 
+where isnull(SedentaryMinutes) = TRUE
+union 
+select 'Calories' as column_name, count(*) as total_missing 
+from daily_activity 
+where isnull(Calories) = TRUE or Calories = 0;
+
+-- -------------------------------------------------------------------------------------------------
+-- For heartrate_seconds (hearate_second missing = NULL or zero)
+-- detect missing (mising if value = NULL)
+select 'Value' as column_name, count(*) as total_missing
+from heartrate_seconds 
+where isnull(Value) = TRUE or Value = 0;
+
+-- -------------------------------------------------------------------------------------------------
+-- for hour_activity 
+-- detect missing (missing if value = NULL)
+select 'Calories' as column_name, count(*) as total_missing
+from hour_activity  
+where isnull(Calories) = TRUE or Calories = 0
+union 
+select 'StepTotal' as column_name, count(*) as total_missing
+from hour_activity  
+where isnull(StepTotal) = TRUE
+union 
+select 'TotalIntensity' as column_name, count(*) as total_missing
+from hour_activity  
+where isnull(TotalIntensity) = TRUE
+union 
+select 'AverageIntensity' as column_name, count(*) as total_missing
+from hour_activity  
+where isnull(AverageIntensity) = TRUE;
+
+-- -------------------------------------------------------------------------------------------------
+-- for minute_sleep 
+-- detect missing (missing if value = NULL)
+select 'value' as column_name, count(*) as total_missing
+from minute_sleep  
+where isnull(value) = TRUE;
+
+-- -------------------------------------------------------------------------------------------------
+-- for minute_Mets_Narrow
+-- detect missing (missing if value = NULL)
+select 'METs' as column_name, count(*) as total_missing
+from minute_Mets_Narrow  
+where isnull(METs) = TRUE;
+
+-- -------------------------------------------------------------------------------------------------
+-- for sleep_day 
+-- detect missing (missing if value = NULL)
+select 'TotalSleepRecords' as column_name, count(*) as total_missing
+from sleep_day  
+where isnull(TotalSleepRecords) = TRUE
+union 
+select 'TotalMinutesAsleep' as column_name, count(*) as total_missing
+from sleep_day  
+where isnull(TotalMinutesAsleep) = TRUE
+union 
+select 'TotalTimeInBed ' as column_name, count(*) as total_missing
+from sleep_day  
+where isnull(TotalTimeInBed) = TRUE;
+
+-- -------------------------------------------------------------------------------------------------
+-- for sleep_day 
+-- detect missing (missing if value = NULL or zero)
+select 'WeightKg' as column_name, count(*) as total_missing
+from weight_log
+where isnull(WeightKg) = TRUE
+union
+select 'WeightPounds' as column_name, count(*) as total_missing
+from weight_log
+where isnull(WeightPounds) = TRUE
+union
+select 'Fat' as column_name, count(*) as total_missing
+from weight_log
+where isnull(Fat) = TRUE
+union
+select 'BMI' as column_name, count(*) as total_missing
+from weight_log
+where isnull(BMI) = TRUE;
 
 
+-- Fat missing: 65/67 rows
+-- What is the missing rate between manual measurement and direct measurement?
+select IsManualReport, count(*) as total_missing
+from weight_log
+where isnull(Fat) = TRUE
+group by IsManualReport
+order by IsManualReport;
+-- 39/26
+
+-- we will do nothing because that missing is realistic and helpful
 
 /*
  * *************************************************************************************************** *
@@ -698,9 +918,492 @@ where LoggedActivitiesDistance = NULL;
  * *************************************************************************************************** *
  */
 
+-- for daily_activity
+-- check ActivityDate distinct
+select distinct ActivityDate from daily_activity;
+
+-- change type of ActivityDate from varchar(10) to date (rename by Date)
+-- update ActivityDate value to format date ('%m/%d/%Y' -> '%Y-%m-%d')
+update daily_activity
+set ActivityDate = str_to_date(ActivityDate,'%m/%d/%Y');
+
+-- change ActivityDate datatype
+alter table daily_activity 
+modify ActivityDate date; 
+
+-- rename ActivityDate to Date
+alter table daily_activity 
+rename column ActivityDate to `Date`;
+
+-- -------------------------------------------------------------------------------------------------
+-- for hour_activity
+select distinct ActivityHour from hour_activity;
+-- split ActivityHour to Date (only contain date) and Time (only contain hh:mm:ss - 24)
+-- add two empty columns (Date and Time with datatype is varchar(50))
+alter table hour_activity
+add column `Date` varchar(50) default '',
+add column `Time` varchar(50) default '';
+
+-- update Date value
+update hour_activity
+set `Date` = str_to_date(substring_index(ActivityHour, ' ', 1),'%m/%d/%Y');
+
+-- update Time value
+update hour_activity
+set `Time` = str_to_date(substring_index(ActivityHour, ' ', -2), '%h:%i:%s %p');
+
+-- change Date and Time datatype
+alter table hour_activity
+modify `Date` date,
+modify `Time` time;
+
+-- remove ActivityHour 
+alter table hour_activity 
+drop column ActivityHour;
+
+-- -------------------------------------------------------------------------------------------------
+-- for heartrate_seconds
+select distinct `Time` from heartrate_seconds;
+-- split Time to Date (only contain date) and Time (only contain hh:mm:ss - 24)
+-- add column (Date) varchar(50)
+alter table heartrate_seconds
+add column `Date` varchar(50) default '';
+
+-- update Date value
+update heartrate_seconds 
+set `Date` = str_to_date(substring_index(`Time`, ' ', 1),'%m/%d/%Y');
+
+-- update Time value
+update heartrate_seconds
+set `Time` = str_to_date(substring_index(`Time`, ' ', -2), '%h:%i:%s %p');
+
+-- update Date and Time datatypes
+alter table heartrate_seconds 
+modify `Date` date,
+modify `Time` time;
+
+
+-- -------------------------------------------------------------------------------------------------
+-- for minute_sleep
+select distinct `date` from minute_sleep;
+-- split date to Date (only contain date) and Time (only contain hh:mm:ss - 24)
+alter table minute_sleep 
+add column `Time` varchar(50) default '',
+rename column `date` to `Date`;
+
+-- update Time value 
+update minute_sleep 
+set `Time` = str_to_date(substring_index(`Date`, ' ', -2), '%h:%i:%s %p');
+
+-- update Date value 
+update minute_sleep 
+set `Date` = str_to_date(substring_index(`Date`, ' ', 1),'%m/%d/%Y');
+
+-- update Date and Time datatypes 
+alter table minute_sleep 
+modify `Date` date, 
+modify `Time` time;
+
+
+select distinct value from minute_sleep;
+-- we know "Value indicating the sleep state. 1 = asleep, 2 = restless, 3 = awake"
+-- So we will transform it to string
+alter table minute_sleep 
+modify value varchar(8);
+
+update minute_sleep 
+set value = 'asleep'
+where value = '1';
+
+update minute_sleep 
+set value = 'restless'
+where value = '2';
+
+update minute_sleep 
+set value = 'awake'
+where value = '3';
+
+
+-- -------------------------------------------------------------------------------------------------
+-- for minute_METs_Narrow
+select distinct ActivityMinute from minute_Mets_Narrow;
+-- split ActivityMinute to Date (only contain date) and Time (only contain hh:mm:ss - 24)
+alter table minute_METs_Narrow
+add column `Time` varchar(50) default '',
+add column `Date` varchar(50) default '';
+
+-- update Time value 
+update minute_Mets_Narrow 
+set `Time` = str_to_date(substring_index(`ActivityMinute`, ' ', -2), '%h:%i:%s %p');
+
+-- update Date value 
+update minute_Mets_Narrow
+set `Date` = str_to_date(substring_index(ActivityMinute, ' ', 1),'%m/%d/%Y');
+
+-- update Date and Time datatypes 
+alter table minute_Mets_Narrow  
+modify `Date` date, 
+modify `Time` time;
+
+-- remove ActivityMinute
+alter table minute_Mets_Narrow 
+drop column ActivityMinute;
+
+-- -------------------------------------------------------------------------------------------------
+-- for sleep_day
+select distinct SleepDay from sleep_day;
+-- split SleepDay to Date (only contain date) and Time (only contain hh:mm:ss - 24)
+alter table sleep_day 
+add column `Time` varchar(50) default '',
+add column `Date` varchar(50) default '';
+
+-- update Time value 
+update sleep_day 
+set `Time` = str_to_date(substring_index(`SleepDay`, ' ', -2), '%h:%i:%s %p');
+
+-- update Date value 
+update sleep_day 
+set `Date` = str_to_date(substring_index(`SleepDay`, ' ', 1),'%m/%d/%Y');
+
+-- update Date and Time datatypes 
+alter table sleep_day 
+modify `Date` date, 
+modify `Time` time;
+
+-- remove SleepDay
+alter table sleep_day 
+drop column SleepDay;
+
+
+-- -------------------------------------------------------------------------------------------------
+-- for weight_log
+select distinct `Date` from weight_log;
+-- split Date to Date (only contain date) and Time (only contain hh:mm:ss - 24)
+alter table weight_log 
+add column `Time` varchar(50) default '';
+
+-- update Time value 
+update weight_log 
+set `Time` = str_to_date(substring_index(`Date`, ' ', -2), '%h:%i:%s %p');
+
+-- update Date value 
+update weight_log 
+set `Date` = str_to_date(substring_index(`Date`, ' ', 1),'%m/%d/%Y');
+
+-- update Date and Time datatypes 
+alter table weight_log 
+modify `Date` date, 
+modify `Time` time;
+
+
 /*
  * *************************************************************************************************** *
- * *********************************** Verify and data structure ************************************* *
+ * *********************************** Verify and data modeling ************************************** *
  * *************************************************************************************************** *
  */
+-- select some value from daily_activity
+select *
+from daily_activity
+limit 5;
 
+-- show all indexes from daily_activity
+show index from daily_activity;
+
+-- -------------------------------------------------------------------------------------------------
+-- select some value from heartrate_seconds 
+select * 
+from heartrate_seconds  
+limit 5;
+
+-- show all indexes from heartrate_seconds 
+show index from heartrate_seconds;
+alter table heartrate_seconds 
+drop index heartrate_seconds_index, 
+add index heartrate_seconds_index(Id, `Date`, `Time`);
+
+-- -------------------------------------------------------------------------------------------------
+-- select some value from hour_activity
+select *
+from hour_activity
+limit 5;
+
+-- show all indexes from hour_activity
+show index from hour_activity;
+alter table hour_activity
+drop index hour_activity_index,
+add index hour_activity_index (Id, `Date`, `Time`);
+
+-- -------------------------------------------------------------------------------------------------
+-- select some value from minute_Mets_Narrow 
+select * 
+from minute_Mets_Narrow 
+limit 5;
+
+-- show all indexes from minute_Mets_Narrow 
+show index from minute_Mets_Narrow;
+alter table minute_Mets_Narrow
+add index minute_Mets_Narrow_index(Id,`Date`, `Time`);
+
+-- -------------------------------------------------------------------------------------------------
+-- select minute_sleep 
+select *
+from minute_sleep 
+limit 5; 
+
+-- show all indexes from minute_sleep
+show index from minute_sleep;
+alter table minute_sleep 
+add index minute_sleep_index(Id,`Date`, `Time`);
+
+-- -------------------------------------------------------------------------------------------------
+-- select sleep_day
+select *
+from sleep_day 
+limit 5;
+
+-- show all indexes from sleep_day
+show index from sleep_day;
+alter table sleep_day 
+drop index sleep_day_index,
+add index sleep_day_index(Id,`Date`,`Time`);
+
+-- -------------------------------------------------------------------------------------------------
+-- select weight_log 
+select *
+from weight_log 
+limit 5;
+
+-- show all indexes from weight_log 
+show index from weight_log;
+alter table weight_log 
+drop index weight_log_index,
+add index weight_log_index(Id,`Date`,`Time`);
+
+
+-- -------------------------------------------------------------------------------------------------
+-- -------------------------------------------------------------------------------------------------
+
+-- create table Id (contain distinct Id from all table)
+create table id (
+	Id bigint unique not null
+);
+
+-- add all unique Id from all selection table
+insert into id 
+select distinct Id
+from daily_activity
+union
+select distinct Id 
+from hour_activity
+union
+select distinct Id 
+from sleep_day
+union
+select distinct Id 
+from minute_Mets_Narrow
+union
+select distinct Id 
+from minute_sleep
+union
+select distinct Id 
+from heartrate_seconds
+union
+select distinct Id 
+from weight_log
+order by Id;
+
+-- -------------------------------------------------------------------------------------------------
+-- -------------------------------------------------------------------------------------------------
+
+-- create table Date and Time (contain distinct date and time from each table)
+-- for date table (only contain Date column)
+-- create date table
+create table `date` (
+	`Date` date unique not null
+);
+
+-- add all unique Date value into date table
+insert into `date`
+select distinct `Date`
+from daily_activity
+union
+select distinct `Date`
+from hour_activity
+union
+select distinct `Date`
+from sleep_day
+union
+select distinct `Date`
+from minute_Mets_Narrow
+union
+select distinct `Date` 
+from minute_sleep
+union
+select distinct `Date`
+from heartrate_seconds
+union
+select distinct `Date`
+from weight_log
+order by `Date`;
+
+
+
+-- -------------------------------------------------------------------------------------------------
+-- for time table (only contain Time column)
+-- create time table
+create table `time`(
+	`Time` time unique not null 
+);
+
+-- add all unique Time value into time table
+insert into `time`
+select distinct `Time`
+from hour_activity
+union
+select distinct `Time`
+from sleep_day
+union
+select distinct `Time`
+from minute_Mets_Narrow
+union
+select distinct `Time` 
+from minute_sleep
+union
+select distinct `Time`
+from heartrate_seconds
+union
+select distinct `Time`
+from weight_log
+order by `Time`;
+-- -------------------------------------------------------------------------------------------------
+-- -------------------------------------------------------------------------------------------------
+-- create foreign key for each table
+-- with daily_activity
+-- for id
+alter table daily_activity 
+add constraint fk_da_id 
+foreign key (Id) references id(Id);
+-- for Date
+alter table daily_activity 
+add constraint fk_da_date 
+foreign key (`Date`) references date(`Date`);
+
+-- -------------------------------------------------------------------------------------------------
+-- with hourly_activity
+-- for id
+alter table hour_activity
+add constraint fk_ha_id
+foreign key (Id) references id(Id);
+
+-- for Date
+alter table hour_activity 
+add constraint fk_ha_date
+foreign key (`Date`) references date(`Date`);
+
+-- for Time
+alter table hour_activity 
+add constraint fk_ha_time
+foreign key (`Time`) references time(`Time`);
+
+-- -------------------------------------------------------------------------------------------------
+-- with sleep_day
+-- for id
+alter table sleep_day 
+add constraint fk_sd_id
+foreign key (Id) references id(Id);
+
+-- for Date
+alter table sleep_day 
+add constraint fk_sd_date
+foreign key (`Date`) references date(`Date`);
+
+-- for Time
+alter table sleep_day 
+add constraint fk_sd_time
+foreign key (`Time`) references time(`Time`);
+
+-- -------------------------------------------------------------------------------------------------
+-- with minute_sleep
+-- for id
+alter table minute_sleep 
+add constraint fk_ms_id
+foreign key (Id) references id(Id);
+
+-- for Date
+alter table minute_sleep 
+add constraint fk_ms_date
+foreign key (`Date`) references date(`Date`);
+
+-- for Time
+alter table minute_sleep 
+add constraint fk_ms_time
+foreign key (`Time`) references time(`Time`);
+
+-- -------------------------------------------------------------------------------------------------
+-- with minute_Mets_Narrow
+-- for id
+alter table minute_Mets_Narrow 
+add constraint fk_mMN_id
+foreign key (Id) references id(Id);
+
+-- for Date
+alter table minute_Mets_Narrow 
+add constraint fk_mMN_date
+foreign key (`Date`) references date(`Date`);
+
+-- for Time
+alter table minute_Mets_Narrow 
+add constraint fk_mMN_time
+foreign key (`Time`) references time(`Time`);
+
+-- -------------------------------------------------------------------------------------------------
+-- with heartrate_seconds
+-- for id
+alter table heartrate_seconds 
+add constraint fk_hs_id
+foreign key (Id) references id(Id);
+
+-- for Date
+alter table heartrate_seconds 
+add constraint fk_hs_date
+foreign key (`Date`) references date(`Date`);
+
+-- for Time
+alter table heartrate_seconds 
+add constraint fk_hs_time
+foreign key (`Time`) references time(`Time`);
+
+-- -------------------------------------------------------------------------------------------------
+-- with weight_log
+-- for id
+alter table weight_log 
+add constraint fk_wl_id
+foreign key (Id) references id(Id);
+
+-- for Date
+alter table weight_log 
+add constraint fk_wl_date
+foreign key (`Date`) references date(`Date`);
+
+-- for Time
+alter table weight_log 
+add constraint fk_wl_time
+foreign key (`Time`) references time(`Time`);
+
+
+-- -------------------------------------------------------------------------------------------------
+-- -------------------------------------------------------------------------------------------------
+
+-- drop unselected tables
+drop table dailyCalories_merged;
+drop table dailyIntensities_merged;
+drop table dailySteps_merged;
+drop table hourlyCalories_merged;
+drop table hourlyIntensities_merged;
+drop table hourlySteps_merged;
+drop table minuteCaloriesNarrow_merged;
+drop table minuteCaloriesWide_merged;
+drop table minuteIntensitiesNarrow_merged;
+drop table minuteIntensitiesWide_merged;
+drop table minuteStepsNarrow_merged;
+drop table minuteStepsWide_merged;
