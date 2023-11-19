@@ -330,7 +330,7 @@ from heartrate_seconds;
 
 -- ---------------------------------------------------------------------------------------------------------------------- --
 -- for hour_activity 
-select * from hour_activiy;
+select * from hour_activity;
 -- set total_row in hour_activity table 
 select round(count(*)*0.25)-1 as q1_row from hour_activity ;
 select round(count(*)*0.5)-1 as q2_row from hour_activity;
